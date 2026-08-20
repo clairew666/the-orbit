@@ -24,6 +24,8 @@ test("registers an offline service worker and install flow", async () => {
   assert.match(worker, /self\.addEventListener\("fetch"/);
   assert.match(page, /serviceWorker\.register\("\/sw\.js"\)/);
   assert.match(page, /beforeinstallprompt/);
+  assert.match(page, /Install Orbit like an app/);
+  assert.match(page, /Add to Home Screen/);
   assert.match(layout, /manifest:\s*"\/manifest\.webmanifest"/);
   assert.match(layout, /appleWebApp/);
 });
