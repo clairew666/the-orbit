@@ -45,7 +45,8 @@ const TOUR_STEPS: { page: AppPage; target: string; title: string; description: s
   { page: "My Habits", target: "habits", title: "Add things quickly on mobile", description: "On smaller screens, the floating + button opens shortcuts for a new habit or appointment. It stays near the bottom navigation so you can add something from anywhere." },
   { page: "Home", target: "points", title: "Mistakes are easy to undo", description: "After deleting a habit, resetting a plant or buying plant care, an Undo message appears briefly at the bottom of the screen. Press Undo to restore the previous state." },
   { page: "Hall of Fame", target: "hall", title: "Celebrate every milestone", description: "The Hall of Fame stores achievements for first steps, streaks, planning and perfect periods. Open it and select any badge to see its details or progress." },
-  { page: "Home", target: "display", title: "Make it comfortable", description: "Use Sounds to control effects, Accessibility for stronger contrast and reduced motion, or Install app to place Orbit on this device. You can also switch themes here and retake this tour from Home at any time." },
+  { page: "Home", target: "display", title: "Make it comfortable", description: "Use Sounds to control effects, Accessibility for stronger contrast and reduced motion, and Theme to change Orbit’s look. You can retake this tour from Home at any time." },
+  { page: "Home", target: "display", title: "Install Orbit like an app", description: "In Chrome on a computer or Android, press Install app here—or use the browser menu and choose Install app. On iPhone or iPad, open Orbit in Safari, tap Share, then Add to Home Screen. The installed Orbit opens in its own window; your data remains stored on that device." },
 ];
 
 function OrbitLogo({ className = "" }: { className?: string }) {
