@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
+import { DragEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Frequency = "Daily" | "Weekly" | "Monthly" | "Yearly";
 type Habit = { id: string; name: string; category: string; completions: string[]; frequency?: Frequency; createdAt?: string; color?: string; weekdays?: number[]; weeklyGoal?: number; paused?: boolean };
@@ -41,7 +41,7 @@ const TOUR_STEPS: { page: AppPage; target: string; title: string; description: s
   { page: "Calendar", target: "calendar", title: "Plan your time", description: "Switch between month, week and day views, move through dates, or press + Plan. Drag an appointment to reschedule it; recurring plans ask whether to move one occurrence or the whole series." },
   { page: "Calendar", target: "calendar-lists", title: "Your calendar lists", description: "Open any section to see all its future appointments. Its checkbox controls whether those items appear on the calendar, and its colour picker keeps the calendar easy to scan." },
   { page: "My Habits", target: "heatmap", title: "See your momentum", description: "The Power-up Map shows twelve weeks of activity. Deeper colours mean more habits were completed on that day." },
-  { page: "My Habits", target: "habits", title: "Build your routines", description: "Habits live inside your custom sections. Click a row to complete it, use the pencil to edit it, and watch its five-day history, next refresh and streak grow." },
+  { page: "My Habits", target: "habits", title: "Build your routines", description: "Habits live inside your custom sections. Click a row to complete it, drag its grip to reorder or move it between sections, or use the arrow buttons. Manage sections lets you drag and reorder the larger groups too." },
   { page: "My Habits", target: "habits", title: "Add things quickly on mobile", description: "On smaller screens, the floating + button opens shortcuts for a new habit or appointment. It stays near the bottom navigation so you can add something from anywhere." },
   { page: "Home", target: "points", title: "Mistakes are easy to undo", description: "After deleting a habit, resetting a plant or buying plant care, an Undo message appears briefly at the bottom of the screen. Press Undo to restore the previous state." },
   { page: "Hall of Fame", target: "hall", title: "Celebrate every milestone", description: "The Hall of Fame stores achievements for first steps, streaks, planning and perfect periods. Open it and select any badge to see its details or progress." },
@@ -155,6 +155,9 @@ export default function Home() {
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
   const [installPrompt, setInstallPrompt] = useState<InstallPromptEvent | null>(null);
   const [installHelpOpen, setInstallHelpOpen] = useState(false);
+  const [draggedHabitId, setDraggedHabitId] = useState<string | null>(null);
+  const [dragOverHabitId, setDragOverHabitId] = useState<string | null>(null);
+  const [draggedCategory, setDraggedCategory] = useState<string | null>(null);
   const [isStandalone, setIsStandalone] = useState(() => typeof window !== "undefined" && (window.matchMedia("(display-mode: standalone)").matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone)));
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -471,6 +474,61 @@ export default function Home() {
 
   function toggleHabitPause(id: string) {
     setHabits((current) => current.map((habit) => habit.id === id ? { ...habit, paused: !habit.paused } : habit));
+  }
+
+  function moveHabit(id: string, targetCategory: string, beforeId?: string) {
+    setHabits((current) => {
+      const moving = current.find((habit) => habit.id === id);
+      if (!moving) return current;
+      const remaining = current.filter((habit) => habit.id !== id);
+      const moved = { ...moving, category: targetCategory };
+      if (beforeId) {
+        const beforeIndex = remaining.findIndex((habit) => habit.id === beforeId);
+        if (beforeIndex >= 0) return [...remaining.slice(0, beforeIndex), moved, ...remaining.slice(beforeIndex)];
+      }
+      const lastTargetIndex = remaining.reduce((last, habit, index) => habit.category === targetCategory ? index : last, -1);
+      const insertAt = lastTargetIndex + 1;
+      return [...remaining.slice(0, insertAt), moved, ...remaining.slice(insertAt)];
+    });
+    setCollapsed((current) => ({ ...current, [targetCategory]: false }));
+    setDraggedHabitId(null);
+    setDragOverHabitId(null);
+  }
+
+  function moveHabitBy(id: string, direction: -1 | 1) {
+    setHabits((current) => {
+      const habit = current.find((item) => item.id === id);
+      if (!habit) return current;
+      const sectionHabits = current.filter((item) => item.category === habit.category);
+      const position = sectionHabits.findIndex((item) => item.id === id);
+      const neighbour = sectionHabits[position + direction];
+      if (!neighbour) return current;
+      const next = [...current];
+      const from = next.findIndex((item) => item.id === id);
+      const to = next.findIndex((item) => item.id === neighbour.id);
+      [next[from], next[to]] = [next[to], next[from]];
+      return next;
+    });
+  }
+
+  function reorderCategory(source: string, target: string) {
+    if (source === target) return;
+    setCategories((current) => {
+      const from = current.indexOf(source);
+      const to = current.indexOf(target);
+      if (from < 0 || to < 0) return current;
+      const next = current.filter((item) => item !== source);
+      next.splice(to, 0, source);
+      return next;
+    });
+    setDraggedCategory(null);
+  }
+
+  function habitDragStart(event: DragEvent<HTMLElement>, id: string) {
+    event.stopPropagation();
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/habit-id", id);
+    setDraggedHabitId(id);
   }
 
   function addCategory(event: FormEvent) {
@@ -827,14 +885,15 @@ export default function Home() {
 
       <section className={`habit-board ${ready ? "is-ready" : ""}`} data-tour="habits" aria-label="Habit list">
         {categories.map((group) => {
-          const groupHabits = habits.filter((habit) => habit.category === group && habit.name.toLowerCase().includes(search.toLowerCase()) && (habitFilter === "All" || (habitFilter === "Done" ? habitIsChecked(habit) : !habit.paused && !habitIsChecked(habit))));
+          const allGroupHabits = habits.filter((habit) => habit.category === group);
+          const groupHabits = allGroupHabits.filter((habit) => habit.name.toLowerCase().includes(search.toLowerCase()) && (habitFilter === "All" || (habitFilter === "Done" ? habitIsChecked(habit) : !habit.paused && !habitIsChecked(habit))));
           const completed = groupHabits.filter(habitIsChecked).length;
           return (
-            <section className="habit-group" key={group}>
+            <section className={`habit-group ${draggedHabitId ? "drop-enabled" : ""}`} key={group} onDragOver={(event) => { if (event.dataTransfer.types.includes("text/habit-id")) event.preventDefault(); }} onDrop={(event) => { const id = event.dataTransfer.getData("text/habit-id"); if (id) { event.preventDefault(); moveHabit(id, group); } }}>
               <button className="group-header" onClick={() => setCollapsed((current) => ({ ...current, [group]: !current[group] }))} aria-expanded={!collapsed[group]}>
                 <span className={`chevron ${collapsed[group] ? "collapsed" : ""}`}>⌄</span><span className="group-name">{group}</span><span className="group-count">{completed}/{groupHabits.length}</span><span className="group-line" />
               </button>
-              {!collapsed[group] && <div className="rows">{groupHabits.length === 0 ? <button className="empty-row" onClick={() => { setCategory(group); setModalOpen(true); }}>+ Add a habit</button> : groupHabits.map((habit) => { const done = habitIsChecked(habit); const streak = streakStats(habit); const tint = habit.color ?? JELLY_COLORS[0]; return <div className={`habit-row ${done ? "done" : ""} ${habit.paused ? "paused" : ""}`} style={{ borderColor: `color-mix(in srgb, ${tint} 58%, white)`, background: `linear-gradient(135deg, color-mix(in srgb, ${tint} 52%, white), color-mix(in srgb, ${tint} 28%, white))` }} key={habit.id} role="checkbox" aria-checked={done} tabIndex={0} onClick={() => toggleHabit(habit.id)} onKeyDown={(event) => rowKey(event, habit.id)}><span className="check" aria-hidden="true">{done ? "✓" : ""}</span><span className="habit-copy"><span className="habit-name">{habit.name}</span><span className="due-label">{habit.frequency ?? "Daily"}</span></span><span className={`streak-pill ${streak.current ? "active" : ""}`}><span>🔥 {streak.current}</span>{streak.milestone >= 10 && <b>🏅 {streak.milestone}</b>}</span><span className="habit-tools"><button className="edit" aria-label={`Edit ${habit.name}`} onClick={(event) => { event.stopPropagation(); editHabit(habit); }}><span aria-hidden="true">✎</span> Edit</button><button className="pause" aria-label={`${habit.paused ? "Resume" : "Pause"} ${habit.name}`} onClick={(event) => { event.stopPropagation(); toggleHabitPause(habit.id); }}><span aria-hidden="true">{habit.paused ? "▶" : "Ⅱ"}</span> {habit.paused ? "Resume" : "Pause"}</button><button className="remove" aria-label={`Remove ${habit.name}`} onClick={(event) => { event.stopPropagation(); setDeletingHabit(habit); }}><span aria-hidden="true">×</span> Remove</button></span><div className="matrix">{days.map((day) => { const key = dateKey(day); return <span key={key} className={habit.completions.includes(key) ? "hit" : "miss"} />; })}</div></div>; })}</div>}
+              {!collapsed[group] && <div className="rows">{groupHabits.length === 0 ? <button className="empty-row" onClick={() => { setCategory(group); setModalOpen(true); }}>+ Add a habit</button> : groupHabits.map((habit) => { const done = habitIsChecked(habit); const streak = streakStats(habit); const tint = habit.color ?? JELLY_COLORS[0]; const habitPosition = allGroupHabits.findIndex((item) => item.id === habit.id); const canDrag = !search && habitFilter === "All"; return <div className={`habit-row ${done ? "done" : ""} ${habit.paused ? "paused" : ""} ${draggedHabitId === habit.id ? "dragging" : ""} ${dragOverHabitId === habit.id ? "drag-over" : ""}`} style={{ borderColor: `color-mix(in srgb, ${tint} 58%, white)`, background: `linear-gradient(135deg, color-mix(in srgb, ${tint} 52%, white), color-mix(in srgb, ${tint} 28%, white))` }} key={habit.id} role="checkbox" aria-checked={done} tabIndex={0} onClick={() => toggleHabit(habit.id)} onKeyDown={(event) => rowKey(event, habit.id)} onDragOver={(event) => { if (event.dataTransfer.types.includes("text/habit-id")) { event.preventDefault(); event.stopPropagation(); setDragOverHabitId(habit.id); } }} onDragLeave={() => setDragOverHabitId((current) => current === habit.id ? null : current)} onDrop={(event) => { const id = event.dataTransfer.getData("text/habit-id"); if (id) { event.preventDefault(); event.stopPropagation(); moveHabit(id, group, habit.id); } }}><button type="button" className="habit-drag-handle" draggable={canDrag} aria-label={`Drag to reorder ${habit.name}`} aria-disabled={!canDrag} title={canDrag ? "Drag to reorder or move section" : "Clear search and filters to drag"} onClick={(event) => event.stopPropagation()} onDragStart={(event) => canDrag && habitDragStart(event, habit.id)} onDragEnd={() => { setDraggedHabitId(null); setDragOverHabitId(null); }}>⠿</button><span className="check" aria-hidden="true">{done ? "✓" : ""}</span><span className="habit-copy"><span className="habit-name">{habit.name}</span><span className="due-label">{habit.frequency ?? "Daily"}</span></span><span className={`streak-pill ${streak.current ? "active" : ""}`}><span>🔥 {streak.current}</span>{streak.milestone >= 10 && <b>🏅 {streak.milestone}</b>}</span><span className="habit-tools"><button className="move" aria-label={`Move ${habit.name} up`} title="Move up" disabled={habitPosition === 0} onClick={(event) => { event.stopPropagation(); moveHabitBy(habit.id, -1); }}>↑</button><button className="move" aria-label={`Move ${habit.name} down`} title="Move down" disabled={habitPosition === allGroupHabits.length - 1} onClick={(event) => { event.stopPropagation(); moveHabitBy(habit.id, 1); }}>↓</button><button className="edit" aria-label={`Edit ${habit.name}`} onClick={(event) => { event.stopPropagation(); editHabit(habit); }}><span aria-hidden="true">✎</span> Edit</button><button className="pause" aria-label={`${habit.paused ? "Resume" : "Pause"} ${habit.name}`} onClick={(event) => { event.stopPropagation(); toggleHabitPause(habit.id); }}><span aria-hidden="true">{habit.paused ? "▶" : "Ⅱ"}</span> {habit.paused ? "Resume" : "Pause"}</button><button className="remove" aria-label={`Remove ${habit.name}`} onClick={(event) => { event.stopPropagation(); setDeletingHabit(habit); }}><span aria-hidden="true">×</span> Remove</button></span><div className="matrix">{days.map((day) => { const key = dateKey(day); return <span key={key} className={habit.completions.includes(key) ? "hit" : "miss"} />; })}</div></div>; })}</div>}
             </section>
           );
         })}
@@ -935,11 +994,11 @@ export default function Home() {
             <p className="categories-intro">Create, rename and reorder the groups that keep your habits tidy.</p>
             <div className="category-list">
               {categories.map((item, index) => (
-                <div className={`category-item ${editingCategory === item ? "editing" : ""}`} key={item}>
+                <div className={`category-item ${editingCategory === item ? "editing" : ""} ${draggedCategory === item ? "dragging" : ""}`} key={item} onDragOver={(event) => { if (event.dataTransfer.types.includes("text/category-name")) event.preventDefault(); }} onDrop={(event) => { const source = event.dataTransfer.getData("text/category-name"); if (source) { event.preventDefault(); reorderCategory(source, item); } }}>
                   {editingCategory === item ? (
                     <input aria-label={`New name for ${item}`} value={editingName} onChange={(event) => setEditingName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") renameCategory(item); }} />
                   ) : <span>{item}</span>}
-                  <span className="category-order"><button aria-label={`Move ${item} up`} title="Move up" disabled={index === 0} onClick={() => setCategories((current) => moveInList(current, index, -1))}>↑</button><button aria-label={`Move ${item} down`} title="Move down" disabled={index === categories.length - 1} onClick={() => setCategories((current) => moveInList(current, index, 1))}>↓</button></span>
+                  <span className="category-order"><button className="category-drag-handle" draggable aria-label={`Drag to reorder ${item}`} title="Drag to reorder" onDragStart={(event) => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/category-name", item); setDraggedCategory(item); }} onDragEnd={() => setDraggedCategory(null)}>⠿</button><button aria-label={`Move ${item} up`} title="Move up" disabled={index === 0} onClick={() => setCategories((current) => moveInList(current, index, -1))}>↑</button><button aria-label={`Move ${item} down`} title="Move down" disabled={index === categories.length - 1} onClick={() => setCategories((current) => moveInList(current, index, 1))}>↓</button></span>
                   <span className="category-actions"><button className="rename" onClick={() => editingCategory === item ? renameCategory(item) : (setEditingCategory(item), setEditingName(item))}>{editingCategory === item ? "Save" : "Rename"}</button>
                   <button className="danger" onClick={() => deleteCategory(item)}>{deleteConfirm === item ? "Confirm delete" : "Delete"}</button></span>
                 </div>

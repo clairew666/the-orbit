@@ -858,3 +858,16 @@ body { background: radial-gradient(circle at 8% 18%, #ffffffb5 0 1px, transparen
 
 /* Installable PWA controls and device safe areas */
 .install-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:9px 14px;border:2px solid #7da9a0;border-radius:999px;background:linear-gradient(135deg,#fff4b7,#c8eee0);color:#304d58;font-weight:950;box-shadow:0 4px 0 #9dbeb4;cursor:pointer}.install-button span{font-size:16px}.install-help-modal{width:min(620px,100%);text-align:center}.install-help-modal>.orbit-logo{width:78px;height:78px}.install-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0}.install-steps>div{padding:15px;border:1px solid #ffffffd1;border-radius:19px;background:#ffffff8c;text-align:left}.install-steps span{display:inline-block;margin-bottom:8px;padding:4px 8px;border-radius:999px;background:#dcedf3;color:#435770;font-size:8px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}.install-steps strong{display:block;color:#2f3e57;font-size:12px}.install-steps p{margin:6px 0 0;color:#56647b;font-size:10px;line-height:1.5}.app-shell{padding-top:env(safe-area-inset-top);padding-right:env(safe-area-inset-right);padding-left:env(safe-area-inset-left)}@media(max-width:850px){.orbit-layout{padding-bottom:calc(92px + env(safe-area-inset-bottom))}.side-menu{bottom:calc(10px + env(safe-area-inset-bottom))}}@media(max-width:600px){.install-steps{grid-template-columns:1fr}.install-button{width:100%}}
+
+/* Reorderable habit and section controls */
+.habit-row{position:relative;padding-left:49px}
+.habit-drag-handle{position:absolute;top:13px;left:11px;display:grid;width:28px!important;min-width:28px!important;height:34px!important;padding:0!important;place-items:center;border:1px solid #ffffffc7!important;border-radius:10px!important;background:#ffffff73!important;color:#68728a!important;font-size:17px!important;line-height:1;cursor:grab!important;touch-action:none}
+.habit-drag-handle:active,.category-drag-handle:active{cursor:grabbing!important}
+.habit-drag-handle[aria-disabled="true"]{cursor:not-allowed!important;opacity:.35}
+.habit-row.dragging,.category-item.dragging{opacity:.45;transform:scale(.985)}
+.habit-row.drag-over{outline:3px solid #77bfb2!important;outline-offset:3px;transform:translateY(3px)}
+.habit-group.drop-enabled>.group-header{transition:border-color .18s,box-shadow .18s}.habit-group.drop-enabled>.group-header:hover{border-color:#78bfb2;box-shadow:0 0 0 4px #9ed9cd45}
+.habit-tools button.move{width:34px;min-width:34px;padding:0;font-size:14px}.habit-tools button.move:disabled{cursor:default;opacity:.3}
+.categories-modal .category-drag-handle{font-size:17px;cursor:grab}.categories-modal .category-item.dragging{outline:3px solid #8fc9bd;outline-offset:2px}
+.accessibility-mode .habit-row.drag-over,.accessibility-mode .category-item.dragging{outline:4px solid #1a66d9!important}
+@media(max-width:650px){.habit-row{padding-left:45px}.habit-drag-handle{left:8px}.habit-tools button.move{flex:0 0 34px}.habit-tools{flex-wrap:wrap}.habit-tools button.edit,.habit-tools button.pause,.habit-tools button.remove{flex:1 1 58px}}
