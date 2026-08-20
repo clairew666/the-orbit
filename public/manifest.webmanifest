@@ -1,0 +1,19 @@
+{
+  "name": "THE ORBIT — Habits, plans and progress",
+  "short_name": "THE ORBIT",
+  "description": "A cheerful habit tracker, calendar and growing plant companion.",
+  "id": "/",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#edf8f6",
+  "theme_color": "#bfe9dd",
+  "categories": ["productivity", "lifestyle", "utilities"],
+  "icons": [
+    { "src": "/icons/orbit-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/orbit-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/orbit-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eef9f7"/><stop offset=".52" stop-color="#d9eef8"/><stop offset="1" stop-color="#e9e1f7"/></linearGradient>
+    <linearGradient id="planet" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#bfe9dd"/><stop offset="1" stop-color="#8fb9e8"/></linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="124" fill="url(#background)"/>
+  <g fill="none" stroke-linecap="round">
+    <ellipse cx="256" cy="256" rx="184" ry="83" stroke="#7187ba" stroke-width="18" transform="rotate(-12 256 256)"/>
+    <ellipse cx="256" cy="256" rx="184" ry="83" stroke="#7fbea4" stroke-width="18" transform="rotate(55 256 256)"/>
+  </g>
+  <circle cx="256" cy="256" r="92" fill="url(#planet)" stroke="#fff" stroke-width="13"/>
+  <path d="M256 273c0-55 24-98 66-124M269 211c25-46 72-54 101-43-11 48-50 75-99 61M248 232c-18-39-59-55-91-39 9 42 44 67 89 56" fill="none" stroke="#365e52" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="439" cy="237" r="31" fill="#ffe68f" stroke="#fff" stroke-width="11"/>
+  <circle cx="106" cy="102" r="12" fill="#fff"/><circle cx="401" cy="89" r="8" fill="#fff"/><circle cx="97" cy="393" r="9" fill="#fff"/>
+</svg>
